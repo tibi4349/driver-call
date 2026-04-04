@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Bejelentkezés</title>
+    <style>
+        body { margin: 0; font-family: Arial; background-color: #f4f4f4; }
+        header { 
+            background: #333; 
+            color: white; 
+            padding: 20px; 
+            position: relative; 
+            text-align: center; 
+        }
+        header img {
+            height: 50px;
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        nav { background: #555; padding: 10px; text-align: center; }
+        nav a { color: white; margin: 10px; text-decoration: none; }
+        
+        .content { 
+            padding: 40px 20px; 
+            display: flex;
+            justify-content: center;
+        }
+
+        .login-box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
+        .login-box input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .login-box button:hover {
+            background-color: #555;
+        }
+        #message {
+            margin-top: 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        footer {
+            background: #333; 
+            color: white; 
+            padding: 15px; 
+            text-align: center; 
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo.png">
+    <h1>Bejelentkezés</h1>
+</header>
+
+<nav>
+    <a href="index.html">Kezdőlap</a>
+    <a href="regist.html">Regisztrálás</a>
+    <a href="kapcs.html">Bejelentkezés</a>
+</nav>
+
+<div class="content">
+    <div class="login-box">
+        <h3>Adja meg adatait</h3>
+        
+        <input type="text" id="username" placeholder="Felhasználónév">
+        <input type="password" id="password" placeholder="Jelszó">
+        
+        <button onclick="checkLogin()">Belépés</button>
+        
+        <div id="message"></div>
+    </div>
+</div>
+
+<footer>
+    <p>Copyright © 2026. Minden jog fenntartva!</p>
+</footer>
+
+<script>
+function checkLogin() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    
+    if ((user === "Visitor" && pass === "Visitor") || 
+        (user === "Admin" && pass === "Admin")) {
+        
+        sessionStorage.setItem("user", user); 
+        
+        alert("Sikeres belépés: " + user);
+        window.location.href = "regist.html"; // Átirányítás a listához
+    } else {
+        alert("Hibás adatok!");
+    }
+}
+</script>
+
+</body>
+</html>

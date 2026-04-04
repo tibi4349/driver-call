@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Kezdőlap</title>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { margin: 0; font-family: Arial; }
+
+        header {
+            background: #333;
+            color: white;
+            padding: 20px;
+            position: relative;
+            text-align: center;
+        }
+
+        header img {
+            height: 50px;
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        nav { background: #555; padding: 10px; text-align: center; }
+        nav a { color: white; margin: 10px; text-decoration: none; }
+
+        .content { padding: 20px; text-align: center; }
+
+        table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            width: 90%;
+        }
+
+        th, td {
+            border: 1px solid #333;
+            padding: 10px;
+        }
+
+        th {
+            background: #333;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <img src="logo.png">
+    <h1>Sofőr lista</h1>
+</header>
+
+<nav>
+    <a href="index.html">Kezdőlap</a>
+    <a href="regist.html">Regisztrálás</a>
+    <a href="kapcs.html">Bejelentkezés</a>
+</nav>
+
+<div class="content">
+    <h2>Meglévő sofőrök</h2>
+
+    <table id="tabla"></table>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAdt7j6PP4FPJIq0iuYgPsk06JWTAFuYbY",
+  authDomain: "soforok-web.firebaseapp.com",
+  projectId: "soforok-web",
+  storageBucket: "soforok-web.firebasestorage.app",
+  messagingSenderId: "230693627452",
+  appId: "1:230693627452:web:f7357016467b1fc1024539"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let tabla = document.getElementById("tabla");
+
+db.collection("soforok").onSnapshot((snapshot) => {
+    tabla.innerHTML = `
+        <tr>
+            <th>Ref.</th>
+            <th>Rendszám</th>
+            <th>Szünet</th>
+            <th>Telefonszám</th>
+            <th>Állapot</th>
+            <th>Kapu</th>
+            <th>Érkezett</th>
+            <th>Elment</th>
+        </tr>
+    `;
+
+    snapshot.forEach((doc) => {
+        let sofor = doc.data();
+
+        tabla.innerHTML += `
+            <tr>
+                <td>${sofor.ref}</td>
+                <td>${sofor.rendszam}</td>
+                <td>${sofor.szunet}</td>
+                <td>${sofor.telefon}</td>
+                <td>${sofor.allapot || "-"}</td>
+		<td>${sofor.kapu || "-"}</td>
+                <td>${sofor.remark1 || ""}</td>
+                <td>${sofor.remark2 || ""}</td>
+            </tr>
+        `;
+    });
+});
+</script>
+
+</body>
+</html>

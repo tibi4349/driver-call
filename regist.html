@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Regisztrálás</title>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { margin: 0; font-family: Arial; }
+        header { background: #333; color: white; padding: 20px; position: relative; text-align: center; }
+        header img { height: 50px; position: absolute; left: 20px; top: 50%; transform: translateY(-50%); }
+        nav { background: #555; padding: 10px; text-align: center; }
+        nav a { color: white; margin: 10px; text-decoration: none; }
+        .content { padding: 20px; text-align: center; }
+        input, select { padding: 10px; margin: 5px; width: 200px; }
+        button { padding: 10px; cursor: pointer; }
+        table { margin: 0 auto; border-collapse: collapse; width: 90%; }
+        th, td { border: 1px solid #333; padding: 10px; }
+        th { background: #333; color: white; }
+        .delete-btn { background: red; color: white; border: none; }
+        
+        /* Elrejtjük az admin funkciókat alapértelmezetten */
+        .admin-only { display: none; }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <img src="logo.png">
+    <h1>Sofőr lista</h1>
+</header>
+
+<nav>
+    <a href="index.html">Kezdőlap</a>
+    <a href="regist.html">Regisztrálás</a>
+    <a href="kapcs.html" id="loginLogoutBtn">Bejelentkezés</a>
+</nav>
+
+<div class="content">
+
+    <div id="adminSection" class="admin-only">
+        <h2>Új sofőr</h2>
+        <form id="form">
+            <input type="text" id="ref" placeholder="Ref" required>
+            <input type="text" id="rendszam" placeholder="Rendszám" required>
+            <input type="text" id="szunet" placeholder="Szünet">
+            <input type="text" id="telefon" placeholder="Telefonszám">
+            <br>
+            <select id="allapot">
+                <option value="megérkezett">Megérkezett</option>
+                <option value="rakodás alatt">Rakodás alatt</option>
+                <option value="elment">Elment</option>
+            </select>
+            <br><br>
+            <button type="submit">Mentés</button>
+        </form>
+    </div>
+
+    <h2>Meglévő sofőrök</h2>
+    <table id="tabla"></table>
+</div>
+
+<script>
+// --- JOGOSULTSÁG ELLENŐRZÉS ---
+const currentUser = sessionStorage.getItem("user");
+const isAdmin = (currentUser === "Admin");
+
+// Ha Admin, mutassuk meg az űrlapot
+if (isAdmin) {
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+}
+
+// --- FIREBASE KONFIGURÁCIÓ ---
+const firebaseConfig = {
+  apiKey: "AIzaSyAdt7j6PP4FPJIq0iuYgPsk06JWTAFuYbY",
+  authDomain: "soforok-web.firebaseapp.com",
+  projectId: "soforok-web",
+  storageBucket: "soforok-web.firebasestorage.app",
+  messagingSenderId: "230693627452",
+  appId: "1:230693627452:web:f7357016467b1fc1024539"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let tabla = document.getElementById("tabla");
+
+function datumMost() {
+    let d = new Date();
+    return d.getFullYear() + "-" +
+           String(d.getMonth()+1).padStart(2,'0') + "-" +
+           String(d.getDate()).padStart(2,'0') + " " +
+           String(d.getHours()).padStart(2,'0') + ":" +
+           String(d.getMinutes()).padStart(2,'0');
+}
+
+// --- LISTÁZÁS ÉS JOGOK KEZELÉSE ---
+db.collection("soforok").onSnapshot((snapshot) => {
+    let html = `
+        <tr>
+            <th>Ref.</th>
+            <th>Rendszám</th>
+            <th>Szünet</th>
+            <th>Telefonszám</th>
+            <th>Állapot</th>
+            <th>Kapu</th>
+            <th>Érkezett</th>
+            <th>Elment</th>
+            ${isAdmin ? '<th>Művelet</th>' : ''}
+        </tr>
+    `;
+
+    snapshot.forEach((doc) => {
+        let sofor = doc.data();
+        
+        // Ha nem admin, csak szövegként jelenítjük meg a selecteket
+        let allapotCella = isAdmin ? `
+            <select onchange="allapotValtoztat('${doc.id}', this.value)">
+                <option value="megérkezett" ${sofor.allapot==="megérkezett"?"selected":""}>Megérkezett</option>
+                <option value="rakodás alatt" ${sofor.allapot==="rakodás alatt"?"selected":""}>Rakodás alatt</option>
+                <option value="elment" ${sofor.allapot==="elment"?"selected":""}>Elment</option>
+            </select>` : `<b>${sofor.allapot}</b>`;
+
+        let kapuCella = isAdmin ? `
+            <select onchange="kapuValtoztat('${doc.id}', this.value)">
+                <option value="" ${sofor.kapu===""?"selected":""}>-</option>
+                <option value="A0-02" ${sofor.kapu==="A0-02"?"selected":""}>A0-02</option>
+                <option value="A0-03" ${sofor.kapu==="A0-03"?"selected":""}>A0-03</option>
+                <option value="A0-06" ${sofor.kapu==="A0-06"?"selected":""}>A0-06</option>
+                <option value="A0-07" ${sofor.kapu==="A0-07"?"selected":""}>A0-07</option>
+                <option value="A0-08" ${sofor.kapu==="A0-08"?"selected":""}>A0-08</option>
+                <option value="A0-09" ${sofor.kapu==="A0-09"?"selected":""}>A0-09</option>
+                <option value="F32" ${sofor.kapu==="F32"?"selected":""}>F32</option>
+                <option value="F33" ${sofor.kapu==="F33"?"selected":""}>F33</option>
+            </select>` : `<b>${sofor.kapu || "-"}</b>`;
+
+        html += `
+            <tr>
+                <td>${sofor.ref}</td>
+                <td>${sofor.rendszam}</td>
+                <td>${sofor.szunet}</td>
+                <td>${sofor.telefon}</td>
+                <td>${allapotCella}</td>
+                <td>${kapuCella}</td>
+                <td>${sofor.remark1 || ""}</td>
+                <td>${sofor.remark2 || ""}</td>
+                ${isAdmin ? `<td><button class="delete-btn" onclick="torles('${doc.id}')">Törlés</button></td>` : ''}
+            </tr>
+        `;
+    });
+    tabla.innerHTML = html;
+});
+
+// Mentés csak ha Admin
+document.getElementById("form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    if(!isAdmin) return;
+
+    let ujSofor = {
+        ref: document.getElementById("ref").value,
+        rendszam: document.getElementById("rendszam").value,
+        szunet: document.getElementById("szunet").value,
+        telefon: document.getElementById("telefon").value,
+        allapot: document.getElementById("allapot").value,
+        remark1: datumMost(),
+        remark2: "",
+        kapu: ""
+    };
+
+    db.collection("soforok").add(ujSofor);
+    document.getElementById("form").reset();
+});
+
+function allapotValtoztat(id, ujAllapot) {
+    if(!isAdmin) return;
+    let adat = { allapot: ujAllapot };
+    if (ujAllapot === "elment") adat.remark2 = datumMost();
+    db.collection("soforok").doc(id).update(adat);
+}
+
+function kapuValtoztat(id, kapu) {
+    if(!isAdmin) return;
+    db.collection("soforok").doc(id).update({ kapu: kapu });
+}
+
+function torles(id) {
+    if(!isAdmin) return;
+    if (confirm("Biztos törlöd?")) {
+        db.collection("soforok").doc(id).delete();
+    }
+}
+</script>
+
+</body>
+</html>
