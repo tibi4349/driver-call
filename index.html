@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <title>Kezdőlap</title>
 
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>  
+
 
     <style>
         body { margin: 0; font-family: Arial; }
 
         header {
-            background: #333;
+            background: #0c2541;
             color: white;
             padding: 20px;
             position: relative;
@@ -25,8 +26,30 @@
             top: 50%;
             transform: translateY(-50%);
         }
+	#userInfo {
+    		position: absolute;
+    		right: 20px;
+    		top: 20px;
+    		display: flex;
+    		align-items: center;
+		gap: 10px;
+	}
+	#userInfo span {
+    		font-weight: bold;
+	}
+	#logoutBtn {
+    		background-color: #3e5171;
+    		color: white;
+    		border: none;
+    		padding: 5px 10px;
+    		border-radius: 4px;
+    		cursor: pointer;
+	}
+	#logoutBtn:hover {
+    		background-color: #556a9e;
+	}
 
-        nav { background: #555; padding: 10px; text-align: center; }
+        nav { background: #3e5171; padding: 10px; text-align: center; }
         nav a { color: white; margin: 10px; text-decoration: none; }
 
         .content { padding: 20px; text-align: center; }
@@ -43,8 +66,35 @@
         }
 
         th {
-            background: #333;
+            background: #0c2541;
             color: white;
+        }
+        td {
+            background: #e0f1ff;
+            border: 1px solid white;
+            padding: 10px;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial;
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+        }
+        footer {
+            background: #0c2541;
+            color: white;
+            text-align: center;
+            padding: 15px 10px;
+            font-size: 14px;
+            position: relative;
+            bottom: 0;
+            width: 100%;
         }
     </style>
 </head>
@@ -52,14 +102,21 @@
 <body>
 
 <header>
-	<img src=".png">
     <h1>Sofőr lista</h1>
+    <div id="userInfo">
+        <span id="welcomeText"></span>
+        <button id="logoutBtn" style="display:none;">Kijelentkezés</button>
+    </div>
 </header>
 
 <nav>
     <a href="index.html">Kezdőlap</a>
-    <a href="regist.html">Regisztrálás</a>
+    <a href="regist.html">Sofőr regisztrálás</a>
     <a href="kapcs.html">Bejelentkezés</a>
+    <a href="reg.html">Regisztráció</a>
+    <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
+    <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
+
 </nav>
 
 <div class="content">
@@ -67,6 +124,10 @@
 
     <table id="tabla"></table>
 </div>
+
+<footer>
+    <p>Copyright © 2026. Minden jog fenntartva!</p>
+</footer>
 
 <script>
 const firebaseConfig = {
@@ -82,18 +143,20 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let tabla = document.getElementById("tabla");
+const currentUser = sessionStorage.getItem("user");
+const isLoggedIn = currentUser && currentUser.trim() !== "";
 
 db.collection("soforok").onSnapshot((snapshot) => {
     tabla.innerHTML = `
         <tr>
-            <th>Ref.</th>
-            <th>Rendszám</th>
-            <th>Szünet</th>
-            <th>Telefonszám</th>
-            <th>Állapot</th>
-            <th>Kapu</th>
-            <th>Érkezett</th>
-            <th>Elment</th>
+		<th>Ref.</th>
+        	${isLoggedIn ? '<th>Rendszám</th>' : ''}
+        	<th>Szünet</th>
+        	${isLoggedIn ? '<th>Telefonszám</th>' : ''}
+        	<th>Állapot</th>
+        	<th>Kapu</th>
+        	<th>Érkezett</th>
+        	<th>Elment</th>
         </tr>
     `;
 
@@ -102,17 +165,33 @@ db.collection("soforok").onSnapshot((snapshot) => {
 
         tabla.innerHTML += `
             <tr>
-                <td>${sofor.ref}</td>
-                <td>${sofor.rendszam}</td>
-                <td>${sofor.szunet}</td>
-                <td>${sofor.telefon}</td>
-                <td>${sofor.allapot || "-"}</td>
-		<td>${sofor.kapu || "-"}</td>
-                <td>${sofor.remark1 || ""}</td>
-                <td>${sofor.remark2 || ""}</td>
+		<td>${sofor.ref}</td>
+        	${isLoggedIn ? `<td>${sofor.rendszam}</td>` : ''}
+        	<td>${sofor.szunet}</td>
+        	${isLoggedIn ? `<td>${sofor.telefon}</td>` : ''}
+        	<td>${sofor.allapot || "-"}</td>
+        	<td>${sofor.kapu || "-"}</td>
+        	<td>${sofor.remark1 || ""}</td>
+        	<td>${sofor.remark2 || ""}</td>
             </tr>
         `;
     });
+});
+
+if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
+    document.getElementById("adminMenuAdatok").style.display = "inline";
+    document.getElementById("adminMenuRiport").style.display = "inline";
+}
+const username = sessionStorage.getItem("user");
+if (username) {
+    document.getElementById("welcomeText").textContent = `Üdv, ${username}!`;
+    document.getElementById("logoutBtn").style.display = "inline-block";
+} else {
+    document.getElementById("welcomeText").textContent = "Nincs bejelentkezve";
+}
+document.getElementById("logoutBtn").addEventListener("click", () => {
+    sessionStorage.clear();
+    window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
 });
 </script>
 
