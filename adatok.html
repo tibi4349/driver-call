@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>Adatok</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>  
+
+<style>
+    body { margin: 0; font-family: Arial; }
+
+    header {
+        background: #0c2541;
+        color: white;
+        padding: 20px;
+        position: relative;
+        text-align: center;
+    }
+
+    header img {
+        height: 50px;
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+	#userInfo {
+    		position: absolute;
+    		right: 20px;
+    		top: 20px;
+    		display: flex;
+    		align-items: center;
+		gap: 10px;
+	}
+	#userInfo span {
+    		font-weight: bold;
+	}
+	#logoutBtn {
+    		background-color: #3e5171;
+    		color: white;
+    		border: none;
+    		padding: 5px 10px;
+    		border-radius: 4px;
+    		cursor: pointer;
+	}
+	#logoutBtn:hover {
+    		background-color: #556a9e;
+	}
+
+    nav {
+        background: #3e5171;
+        padding: 10px;
+        text-align: center;
+    }
+
+    nav a {
+        color: white;
+        margin: 10px;
+        text-decoration: none;
+    }
+
+    .content {
+        padding: 20px;
+        text-align: center;
+    }
+
+    table {
+        margin: 0 auto;
+        border-collapse: collapse;
+        width: 80%;
+    }
+
+    th, td {
+        border: 1px solid #333;
+        padding: 10px;
+    }
+
+    th {
+        background: #0c2541;
+        color: white;
+    }
+        td {
+            background: #e0f1ff;
+            border: 1px solid white;
+            padding: 10px;
+        }
+
+    button {
+        padding: 6px 10px;
+        margin: 2px;
+        cursor: pointer;
+    }
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial;
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+        }
+        footer {
+            background: #0c2541;
+            color: white;
+            text-align: center;
+            padding: 15px 10px;
+            font-size: 14px;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Felhasználók</h1>
+    <div id="userInfo">
+        <span id="welcomeText"></span>
+        <button id="logoutBtn" style="display:none;">Kijelentkezés</button>
+    </div>
+</header>
+
+<nav>
+    <a href="index.html">Kezdőlap</a>
+    <a href="regist.html">Sofőr regisztrálás</a>
+    <a href="kapcs.html">Bejelentkezés</a>
+    <a href="reg.html">Regisztráció</a>
+    <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
+    <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
+
+</nav>
+
+<div class="content">
+
+    <h2>Felhasználók kezelése</h2>
+
+    <table id="tabla"></table>
+
+</div>
+
+<footer>
+    <p>Copyright © 2026. Minden jog fenntartva!</p>
+</footer>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAdt7j6PP4FPJIq0iuYgPsk06JWTAFuYbY",
+  authDomain: "soforok-web.firebaseapp.com",
+  projectId: "soforok-web",
+  storageBucket: "soforok-web.firebasestorage.app",
+  messagingSenderId: "230693627452",
+  appId: "1:230693627452:web:f7357016467b1fc1024539"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const currentUser = sessionStorage.getItem("user");
+
+if(currentUser !== "Admin"){
+    alert("Nincs jogosultság!");
+    window.location.href = "index.html";
+}
+
+if(currentUser === "Admin"){
+    document.getElementById("adminMenuAdatok").style.display = "inline";
+}
+
+let tabla = document.getElementById("tabla");
+
+db.collection("users").onSnapshot(snapshot => {
+    tabla.innerHTML = `
+        <tr>
+            <th>Felhasználónév</th>
+            <th>Jelszó</th>
+            <th>Jogosultság</th>
+            <th>Állapot</th>
+            <th>Művelet</th>
+        </tr>
+    `;
+
+    snapshot.forEach(doc => {
+        let u = doc.data();
+
+        tabla.innerHTML += `
+            <tr>
+                <td>${u.username}</td>
+                <td>${u.password}</td>
+		<td>
+			<select onchange="setRole('${doc.id}', this.value)">
+			   <option value="viewer" ${u.role==="viewer"?"selected":""}>Néző</option>
+			   <option value="editor" ${u.role==="editor"?"selected":""}>Szerkesztő</option>
+			   <option value="admin" ${u.role==="admin"?"selected":""}>Admin</option>
+			</select>
+		</td>
+                <td>${u.approved ? "Jóváhagyva" : "Függőben"}</td>
+                <td>
+                    <button onclick="approve('${doc.id}')">✔ Jóváhagy</button>
+                    <button onclick="torles('${doc.id}')">❌ Törlés</button>
+                </td>
+            </tr>
+        `;
+    });
+});
+
+function approve(id){
+    db.collection("users").doc(id).update({approved:true});
+}
+
+function torles(id){
+    if(confirm("Biztos törlöd?")){
+        db.collection("users").doc(id).delete();
+    }
+}
+if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
+    document.getElementById("adminMenuAdatok").style.display = "inline";
+    document.getElementById("adminMenuRiport").style.display = "inline";
+}
+const username = sessionStorage.getItem("user");
+if (username) {
+    document.getElementById("welcomeText").textContent = `Üdv, ${username}!`;
+    document.getElementById("logoutBtn").style.display = "inline-block";
+} else {
+    document.getElementById("welcomeText").textContent = "Nincs bejelentkezve";
+}
+document.getElementById("logoutBtn").addEventListener("click", () => {
+    sessionStorage.clear();
+    window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
+});
+</script>
+
+</body>
+</html>

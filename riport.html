@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>Riportnapló – Sofőr tevékenységek</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>  
+
+
+<style>
+  body { margin:0; font-family:Arial; background:#f4f4f4; }
+  header { background:#0c2541; color:white; padding:20px; text-align:center; }
+	#userInfo {
+    		position: absolute;
+    		right: 20px;
+    		top: 20px;
+    		display: flex;
+    		align-items: center;
+		gap: 10px;
+	}
+	#userInfo span {
+    		font-weight: bold;
+	}
+	#logoutBtn {
+    		background-color: #3e5171;
+    		color: white;
+    		border: none;
+    		padding: 5px 10px;
+    		border-radius: 4px;
+    		cursor: pointer;
+	}
+	#logoutBtn:hover {
+    		background-color: #556a9e;
+	}
+  nav { background:#3e5171; padding:10px; text-align:center; }
+  nav a { color:white; margin:10px; text-decoration:none; }
+  table { width:95%; margin:30px auto; border-collapse:collapse; background:white; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+  th,td { padding:10px; border:1px solid #ccc; }
+  th { background:#0c2541; color:white; text-align:left; }
+  tr:nth-child(even){background:#f9f9f9;}
+  .tipus{font-weight:bold;}
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial;
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+        }
+        footer {
+            background: #0c2541;
+            color: white;
+            text-align: center;
+            padding: 15px 10px;
+            font-size: 14px;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Riportnapló – Sofőr tevékenységek</h1>
+    <div id="userInfo">
+        <span id="welcomeText"></span>
+        <button id="logoutBtn" style="display:none;">Kijelentkezés</button>
+    </div>
+</header>
+
+<nav>
+    <a href="index.html">Kezdőlap</a>
+    <a href="regist.html">Sofőr regisztrálás</a>
+    <a href="kapcs.html">Bejelentkezés</a>
+    <a href="reg.html">Regisztráció</a>
+    <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
+    <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
+</nav>
+
+<table id="riportTabla">
+  <thead>
+    <tr>
+      <th>Időpont</th>
+      <th>Felhasználó</th>
+      <th>Művelet típusa</th>
+      <th>Érintett sofőr ID</th>
+      <th>Részletek</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<footer>
+    <p>Copyright © 2026. Minden jog fenntartva!</p>
+</footer>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAdt7j6PP4FPJIq0iuYgPsk06JWTAFuYbY",
+  authDomain: "soforok-web.firebaseapp.com",
+  projectId: "soforok-web",
+  storageBucket: "soforok-web.firebasestorage.app",
+  messagingSenderId: "230693627452",
+  appId: "1:230693627452:web:f7357016467b1fc1024539"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const currentUser = sessionStorage.getItem("user");
+const currentRole = sessionStorage.getItem("role");
+
+if (currentUser !== "Admin" && currentRole !== "admin") {
+  alert("Ehhez az oldalhoz nincs jogosultságod!");
+  window.location.href = "kapcs.html";
+}
+
+const tbody = document.querySelector("#riportTabla tbody");
+
+db.collection("riportnaplo").orderBy("datum", "desc").onSnapshot(snapshot => {
+  tbody.innerHTML = "";
+  snapshot.forEach(doc => {
+    const e = doc.data();
+    const sor = document.createElement("tr");
+
+    sor.innerHTML = `
+      <td>${e.datum || "-"}</td>
+      <td>${e.user || "-"}</td>
+      <td class="tipus">${e.tipus || "-"}</td>
+      <td>${e.soforId || "-"}</td>
+      <td>
+        ${e.allapot ? "Állapot: " + e.allapot : ""}
+        ${e.kapu ? " | Kapu: " + e.kapu : ""}
+        ${e.ref ? " | Ref: " + e.ref : ""}
+        ${e.rendszam ? " | Rendszám: " + e.rendszam : ""}
+      </td>
+    `;
+    tbody.appendChild(sor);
+  });
+});
+
+if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
+    document.getElementById("adminMenuAdatok").style.display = "inline";
+    document.getElementById("adminMenuRiport").style.display = "inline";
+}
+const username = sessionStorage.getItem("user");
+if (username) {
+    document.getElementById("welcomeText").textContent = `Üdv, ${username}!`;
+    document.getElementById("logoutBtn").style.display = "inline-block";
+} else {
+    document.getElementById("welcomeText").textContent = "Nincs bejelentkezve";
+}
+document.getElementById("logoutBtn").addEventListener("click", () => {
+    sessionStorage.clear();
+    window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
+});
+</script>
+
+</body>
+</html>

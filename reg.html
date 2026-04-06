@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Regisztráció</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>  
+
+
+    <style>
+        body { margin: 0; font-family: Arial; background-color: #f4f4f4; }
+        header { 
+            background: #0c2541; 
+            color: white; 
+            padding: 20px; 
+            position: relative; 
+            text-align: center; 
+        }
+        header img {
+            height: 50px;
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+	#userInfo {
+    		position: absolute;
+    		right: 20px;
+    		top: 20px;
+    		display: flex;
+    		align-items: center;
+		gap: 10px;
+	}
+	#userInfo span {
+    		font-weight: bold;
+	}
+	#logoutBtn {
+    		background-color: #3e5171;
+    		color: white;
+    		border: none;
+    		padding: 5px 10px;
+    		border-radius: 4px;
+    		cursor: pointer;
+	}
+	#logoutBtn:hover {
+    		background-color: #556a9e;
+	}
+        nav { background: #3e5171; padding: 10px; text-align: center; }
+        nav a { color: white; margin: 10px; text-decoration: none; }
+        
+        .content { 
+            padding: 40px 20px; 
+            display: flex;
+            justify-content: center;
+        }
+
+        .login-box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
+        .login-box input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 10px;
+            background-color: #3e5171;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .login-box button:hover {
+            background-color: #0c2541;
+        }
+        #message {
+            margin-top: 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial;
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+        }
+        footer {
+            background: #0c2541;
+            color: white;
+            text-align: center;
+            padding: 15px 10px;
+            font-size: 14px;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Regisztráció</h1>
+    <div id="userInfo">
+        <span id="welcomeText"></span>
+        <button id="logoutBtn" style="display:none;">Kijelentkezés</button>
+    </div>
+</header>
+
+<nav>
+    <a href="index.html">Kezdőlap</a>
+    <a href="regist.html">Sofőr regisztrálás</a>
+    <a href="kapcs.html">Bejelentkezés</a>
+    <a href="reg.html">Regisztráció</a>
+    <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
+    <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
+
+</nav>
+
+<div class="content">
+    <div class="login-box">
+	<h3>Regisztráció</h3>
+
+		<input type="text" id="regUser" placeholder="Felhasználónév">
+		<input type="password" id="regPass" placeholder="Jelszó">
+
+		<button onclick="register()">Regisztráció</button>
+    </div>
+</div>
+
+<footer>
+    <p>Copyright © 2026. Minden jog fenntartva!</p>
+</footer>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAdt7j6PP4FPJIq0iuYgPsk06JWTAFuYbY",
+  authDomain: "soforok-web.firebaseapp.com",
+  projectId: "soforok-web",
+  storageBucket: "soforok-web.firebasestorage.app",
+  messagingSenderId: "230693627452",
+  appId: "1:230693627452:web:f7357016467b1fc1024539"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+function register() {
+    const user = document.getElementById('regUser').value.trim();
+    const pass = document.getElementById('regPass').value.trim();
+    if (!user || !pass) {
+        alert("Tölts ki minden mezőt!");
+        return;
+    }
+    db.collection("users").add({
+        username: user,
+        password: pass,
+        approved: false,
+        role: "viewer"
+    })
+    .then(() => {
+        alert("Sikeres regisztráció! Admin jóváhagyás szükséges a belépéshez.");
+        document.getElementById('regUser').value = "";
+        document.getElementById('regPass').value = "";
+    })
+    .catch(err => {
+        console.error("Hiba a regisztrációnál:", err);
+        alert("Hiba történt a regisztráció során!");
+    });
+}
+if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
+    document.getElementById("adminMenuAdatok").style.display = "inline";
+    document.getElementById("adminMenuRiport").style.display = "inline";
+}
+const username = sessionStorage.getItem("user");
+if (username) {
+    document.getElementById("welcomeText").textContent = `Üdv, ${username}!`;
+    document.getElementById("logoutBtn").style.display = "inline-block";
+} else {
+    document.getElementById("welcomeText").textContent = "Nincs bejelentkezve";
+}
+document.getElementById("logoutBtn").addEventListener("click", () => {
+    sessionStorage.clear();
+    window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
+});
+</script>
+
+</body>
+</html>
