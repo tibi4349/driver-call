@@ -191,7 +191,7 @@ function checkLogin() {
           sessionStorage.setItem("role", u.role || "viewer");
           
           alert("Sikeres belépés: " + user);
-          window.location.href = "regist.html"; // átirányítás regisztrált felhasználóknak
+          window.location.href = "index.html"; // átirányítás regisztrált felhasználóknak
       })
       .catch(err => {
           console.error(err);
