@@ -4,22 +4,71 @@
     <meta charset="UTF-8">
     <title>Regisztrálás</title>
 
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>  
 
     <style>
         body { margin: 0; font-family: Arial; }
-        header { background: #333; color: white; padding: 20px; position: relative; text-align: center; }
+        header { background: #0c2541; color: white; padding: 20px; position: relative; text-align: center; }
         header img { height: 50px; position: absolute; left: 20px; top: 50%; transform: translateY(-50%); }
-        nav { background: #555; padding: 10px; text-align: center; }
+	#userInfo {
+    		position: absolute;
+    		right: 20px;
+    		top: 20px;
+    		display: flex;
+    		align-items: center;
+		gap: 10px;
+	}
+	#userInfo span {
+    		font-weight: bold;
+	}
+	#logoutBtn {
+    		background-color: #3e5171;
+    		color: white;
+    		border: none;
+    		padding: 5px 10px;
+    		border-radius: 4px;
+    		cursor: pointer;
+	}
+	#logoutBtn:hover {
+    		background-color: #556a9e;
+	}
+        nav { background: #3e5171; padding: 10px; text-align: center; }
         nav a { color: white; margin: 10px; text-decoration: none; }
         .content { padding: 20px; text-align: center; }
         input, select { padding: 10px; margin: 5px; width: 200px; }
         button { padding: 10px; cursor: pointer; }
         table { margin: 0 auto; border-collapse: collapse; width: 90%; }
         th, td { border: 1px solid #333; padding: 10px; }
-        th { background: #333; color: white; }
+        th { background: #0c2541; color: white; }
+        td {
+            background: #e0f1ff;
+            border: 1px solid white;
+            padding: 10px;
+        }
         .delete-btn { background: red; color: white; border: none; }
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial;
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+        }
+        footer {
+            background: #0c2541;
+            color: white;
+            text-align: center;
+            padding: 15px 10px;
+            font-size: 14px;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
         
         /* Elrejtjük az admin funkciókat alapértelmezetten */
         .admin-only { display: none; }
@@ -29,14 +78,21 @@
 <body>
 
 <header>
-    <img src=".png">
     <h1>Sofőr lista</h1>
+    <div id="userInfo">
+        <span id="welcomeText"></span>
+        <button id="logoutBtn" style="display:none;">Kijelentkezés</button>
+    </div>
 </header>
 
 <nav>
     <a href="index.html">Kezdőlap</a>
-    <a href="regist.html">Regisztrálás</a>
+    <a href="regist.html">Sofőr regisztrálás</a>
     <a href="kapcs.html" id="loginLogoutBtn">Bejelentkezés</a>
+    <a href="reg.html">Regisztráció</a>
+    <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
+    <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
+
 </nav>
 
 <div class="content">
@@ -63,17 +119,11 @@
     <table id="tabla"></table>
 </div>
 
+<footer>
+    <p>Copyright © 2026. Minden jog fenntartva!</p>
+</footer>
+
 <script>
-// --- JOGOSULTSÁG ELLENŐRZÉS ---
-const currentUser = sessionStorage.getItem("user");
-const isAdmin = (currentUser === "Admin");
-
-// Ha Admin, mutassuk meg az űrlapot
-if (isAdmin) {
-    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-}
-
-// --- FIREBASE KONFIGURÁCIÓ ---
 const firebaseConfig = {
   apiKey: "AIzaSyAdt7j6PP4FPJIq0iuYgPsk06JWTAFuYbY",
   authDomain: "soforok-web.firebaseapp.com",
@@ -86,7 +136,21 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+const role = sessionStorage.getItem("role");
+
+const isAdmin = (role === "admin");
+const isEditor = (role === "editor");
+const isViewer = (role === "viewer");
+
+
+if (isAdmin || isEditor) {
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+}
+
+
 let tabla = document.getElementById("tabla");
+const currentUser = sessionStorage.getItem("user");
+const isLoggedIn = currentUser && currentUser.trim() !== "";
 
 function datumMost() {
     let d = new Date();
@@ -97,14 +161,13 @@ function datumMost() {
            String(d.getMinutes()).padStart(2,'0');
 }
 
-// --- LISTÁZÁS ÉS JOGOK KEZELÉSE ---
 db.collection("soforok").onSnapshot((snapshot) => {
     let html = `
         <tr>
             <th>Ref.</th>
-            <th>Rendszám</th>
+            ${isLoggedIn ? '<th>Rendszám</th>' : ''}
             <th>Szünet</th>
-            <th>Telefonszám</th>
+            ${isLoggedIn ? '<th>Telefonszám</th>' : ''}
             <th>Állapot</th>
             <th>Kapu</th>
             <th>Érkezett</th>
@@ -116,7 +179,6 @@ db.collection("soforok").onSnapshot((snapshot) => {
     snapshot.forEach((doc) => {
         let sofor = doc.data();
         
-        // Ha nem admin, csak szövegként jelenítjük meg a selecteket
         let allapotCella = isAdmin ? `
             <select onchange="allapotValtoztat('${doc.id}', this.value)">
                 <option value="megérkezett" ${sofor.allapot==="megérkezett"?"selected":""}>Megérkezett</option>
@@ -140,9 +202,9 @@ db.collection("soforok").onSnapshot((snapshot) => {
         html += `
             <tr>
                 <td>${sofor.ref}</td>
-                <td>${sofor.rendszam}</td>
+                ${isLoggedIn ? `<td>${sofor.rendszam}</td>` : ''}
                 <td>${sofor.szunet}</td>
-                <td>${sofor.telefon}</td>
+                ${isLoggedIn ? `<td>${sofor.telefon}</td>` : ''}
                 <td>${allapotCella}</td>
                 <td>${kapuCella}</td>
                 <td>${sofor.remark1 || ""}</td>
@@ -154,11 +216,9 @@ db.collection("soforok").onSnapshot((snapshot) => {
     tabla.innerHTML = html;
 });
 
-// Mentés csak ha Admin
 document.getElementById("form").addEventListener("submit", function(e) {
     e.preventDefault();
     if(!isAdmin) return;
-
     let ujSofor = {
         ref: document.getElementById("ref").value,
         rendszam: document.getElementById("rendszam").value,
@@ -169,29 +229,76 @@ document.getElementById("form").addEventListener("submit", function(e) {
         remark2: "",
         kapu: ""
     };
-
-    db.collection("soforok").add(ujSofor);
+    db.collection("soforok").add(ujSofor).then(ref => {
+        // Új bejegyzés került a sofőrök közé, ezt logoljuk is
+        db.collection("riportnaplo").add({
+            tipus: "új-sofőr",
+            soforId: ref.id,
+            ref: ujSofor.ref,
+            rendszam: ujSofor.rendszam,
+            datum: datumMost(),
+            user: sessionStorage.getItem("user") || "ismeretlen"
+        });
+    });
     document.getElementById("form").reset();
 });
 
 function allapotValtoztat(id, ujAllapot) {
-    if(!isAdmin) return;
-    let adat = { allapot: ujAllapot };
-    if (ujAllapot === "elment") adat.remark2 = datumMost();
-    db.collection("soforok").doc(id).update(adat);
+  if(!(isAdmin || isEditor)) return;
+  let now = datumMost();
+  let adat = { allapot: ujAllapot };
+  if (ujAllapot === "elment") adat.remark2 = now;
+  db.collection("soforok").doc(id).update(adat);
+  // --- Riportnapló bejegyzés ---
+  db.collection("riportnaplo").add({
+      tipus: "állapot-változtatás",
+      soforId: id,
+      allapot: ujAllapot,
+      datum: now,
+      user: sessionStorage.getItem("user") || "ismeretlen"
+  });
 }
 
 function kapuValtoztat(id, kapu) {
-    if(!isAdmin) return;
-    db.collection("soforok").doc(id).update({ kapu: kapu });
+  if(!(isAdmin || isEditor)) return;
+  db.collection("soforok").doc(id).update({ kapu: kapu });
+  // Riportnapló bejegyzés
+  db.collection("riportnaplo").add({
+      tipus: "kapu-változtatás",
+      soforId: id,
+      kapu: kapu,
+      datum: datumMost(),
+      user: sessionStorage.getItem("user") || "ismeretlen"
+  });
 }
 
 function torles(id) {
-    if(!isAdmin) return;
-    if (confirm("Biztos törlöd?")) {
-        db.collection("soforok").doc(id).delete();
-    }
+  if(!isAdmin) return;
+  if (confirm("Biztos törlöd?")) {
+      db.collection("soforok").doc(id).delete();
+      db.collection("riportnaplo").add({
+          tipus: "törlés",
+          soforId: id,
+          datum: datumMost(),
+          user: sessionStorage.getItem("user") || "ismeretlen"
+      });
+  }
 }
+if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
+    document.getElementById("adminMenuAdatok").style.display = "inline";
+    document.getElementById("adminMenuRiport").style.display = "inline";
+}
+const username = sessionStorage.getItem("user");
+if (username) {
+    document.getElementById("welcomeText").textContent = `Üdv, ${username}!`;
+    document.getElementById("logoutBtn").style.display = "inline-block";
+} else {
+    document.getElementById("welcomeText").textContent = "Nincs bejelentkezve";
+}
+document.getElementById("logoutBtn").addEventListener("click", () => {
+    sessionStorage.clear();
+    window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
+});
 </script>
 
 </body>
