@@ -125,9 +125,9 @@
 
 <nav>
     <a href="index.html">Kezdőlap</a>
-    <a href="regist.html">Sofőr regisztrálás</a>
+    <a href="regist.html" id="menuRegist">Sofőr regisztrálás</a>
     <a href="kapcs.html">Bejelentkezés</a>
-    <a href="reg.html">Regisztráció</a>
+    <a href="reg.html" id="adminMenuRegisztráció" style="display:none;">Regisztráció</a>
     <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
     <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
 
@@ -166,7 +166,7 @@ const db = firebase.firestore();
 function checkLogin() {
     const user = document.getElementById('username').value.trim();
     const pass = document.getElementById('password').value.trim();
-    if (user === "Admin" && pass === "Admin27") {
+    if (user === "Admin" && pass === "Admin") {
         sessionStorage.setItem("user", user);
         sessionStorage.setItem("role", "admin");
         alert("Sikeres bejelentkezés: Admin");
@@ -202,6 +202,7 @@ function checkLogin() {
 if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
     document.getElementById("adminMenuAdatok").style.display = "inline";
     document.getElementById("adminMenuRiport").style.display = "inline";
+    document.getElementById("adminMenuRegisztráció").style.display = "inline";
 }
 const username = sessionStorage.getItem("user");
 if (username) {
@@ -214,6 +215,9 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
     sessionStorage.clear();
     window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
 });
+if (!sessionStorage.getItem("user")) {
+    document.getElementById("menuRegist").style.display = "none";
+}
 </script>
 
 </body>
