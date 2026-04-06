@@ -212,6 +212,9 @@ db.collection("users").onSnapshot(snapshot => {
 function approve(id){
     db.collection("users").doc(id).update({approved:true});
 }
+function setRole(id, role) {
+    db.collection("users").doc(id).update({ role: role });
+}
 
 function torles(id){
     if(confirm("Biztos törlöd?")){
