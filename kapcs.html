@@ -170,7 +170,7 @@ function checkLogin() {
         sessionStorage.setItem("user", user);
         sessionStorage.setItem("role", "admin");
         alert("Sikeres bejelentkezés: Admin");
-        window.location.href = "adatok.html"; // Admin oldalra irányít
+        window.location.href = "index.html";
         return;
     }
     db.collection("users")
@@ -191,7 +191,7 @@ function checkLogin() {
           sessionStorage.setItem("role", u.role || "viewer");
           
           alert("Sikeres belépés: " + user);
-          window.location.href = "index.html"; // átirányítás regisztrált felhasználóknak
+          window.location.href = "index.html";
       })
       .catch(err => {
           console.error(err);
