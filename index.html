@@ -111,9 +111,9 @@
 
 <nav>
     <a href="index.html">Kezdőlap</a>
-    <a href="regist.html" id="menuRegist">Sofőr regisztrálás</a>
+    <a href="regist.html">Sofőr regisztrálás</a>
     <a href="kapcs.html">Bejelentkezés</a>
-    <a href="reg.html" id="adminMenuRegisztráció" style="display:none;">Regisztráció</a>
+    <a href="reg.html">Regisztráció</a>
     <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
     <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
 
@@ -146,15 +146,17 @@ let tabla = document.getElementById("tabla");
 const currentUser = sessionStorage.getItem("user");
 const isLoggedIn = currentUser && currentUser.trim() !== "";
 
-db.collection("soforok").onSnapshot((snapshot) => {
+db.collection("soforok")
+	.where("allapot", "!=", "elment")
+	.onSnapshot((snapshot) => {
     tabla.innerHTML = `
         <tr>
 		<th>Ref.</th>
         	${isLoggedIn ? '<th>Rendszám</th>' : ''}
+        	<th>Szünet</th>
         	${isLoggedIn ? '<th>Telefonszám</th>' : ''}
-        	${isLoggedIn ? '<th>Szünet</th>' : ''}
         	<th>Állapot</th>
-        	${isLoggedIn ? '<th>Kapu</th>' : ''}
+        	<th>Kapu</th>
         	<th>Érkezett</th>
         	<th>Elment</th>
         </tr>
@@ -167,10 +169,10 @@ db.collection("soforok").onSnapshot((snapshot) => {
             <tr>
 		<td>${sofor.ref}</td>
         	${isLoggedIn ? `<td>${sofor.rendszam}</td>` : ''}
+        	<td>${sofor.szunet}</td>
         	${isLoggedIn ? `<td>${sofor.telefon}</td>` : ''}
-        	${isLoggedIn ? `<td>${sofor.szunet}</td>` : ''}
         	<td>${sofor.allapot || "-"}</td>
-        	${isLoggedIn ? `<td>${sofor.kapu || "-"}</td>` : ''}
+        	<td>${sofor.kapu || "-"}</td>
         	<td>${sofor.remark1 || ""}</td>
         	<td>${sofor.remark2 || ""}</td>
             </tr>
@@ -181,7 +183,6 @@ db.collection("soforok").onSnapshot((snapshot) => {
 if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
     document.getElementById("adminMenuAdatok").style.display = "inline";
     document.getElementById("adminMenuRiport").style.display = "inline";
-    document.getElementById("adminMenuRegisztráció").style.display = "inline";
 }
 const username = sessionStorage.getItem("user");
 if (username) {
@@ -192,25 +193,8 @@ if (username) {
 }
 document.getElementById("logoutBtn").addEventListener("click", () => {
     sessionStorage.clear();
-    window.location.href = "index.html";
+    window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
 });
-
-const navProtectedLinks = document.querySelectorAll(".protected-link");
-const loggedUser = sessionStorage.getItem("user");
-
-if (!loggedUser) {
-    navProtectedLinks.forEach(link => {
-        link.style.display = "none";
-    });
-} else {
-    navProtectedLinks.forEach(link => {
-        link.style.display = "inline";
-    });
-}
-
-if (!sessionStorage.getItem("user")) {
-    document.getElementById("menuRegist").style.display = "none";
-}
 </script>
 
 </body>
