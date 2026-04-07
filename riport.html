@@ -5,7 +5,8 @@
 <title>Riportnapló – Sofőr tevékenységek</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>  
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>  
 
 
 <style>
@@ -62,6 +63,31 @@
             bottom: 0;
             width: 100%;
         }
+.export-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+#exportBtn {
+    background-color: #3e5171; /* Alapszín */
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background-color 0.3s ease; /* Finom átmenet az átszíneződéshez */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+#exportBtn:hover {
+    background-color: #556a9e; /* Szín, ha rámegy az egér */
+}
+
+#exportBtn:active {
+    transform: translateY(1px); /* Kattintáskor kicsit benyomódik */
+}
 </style>
 </head>
 <body>
@@ -76,11 +102,14 @@
 
 <nav>
     <a href="index.html">Kezdőlap</a>
-    <a href="regist.html" id="menuRegist">Sofőr regisztrálás</a>
+    <a href="regist.html">Sofőr regisztrálás</a>
     <a href="kapcs.html">Bejelentkezés</a>
-    <a href="reg.html" id="adminMenuRegisztráció" style="display:none;">Regisztráció</a>
+    <a href="reg.html">Regisztráció</a>
     <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
     <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
+    <div class="export-container">
+    <button id="exportBtn">Export</button>
+    </div>
 </nav>
 
 <table id="riportTabla">
@@ -89,8 +118,9 @@
       <th>Időpont</th>
       <th>Felhasználó</th>
       <th>Művelet típusa</th>
-      <th>Érintett sofőr ID</th>
+      <th>Referencia ID</th>
       <th>Részletek</th>
+      <th>Műveletek</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -127,28 +157,43 @@ db.collection("riportnaplo").orderBy("datum", "desc").onSnapshot(snapshot => {
   tbody.innerHTML = "";
   snapshot.forEach(doc => {
     const e = doc.data();
+    const docId = doc.id;
     const sor = document.createElement("tr");
 
     sor.innerHTML = `
       <td>${e.datum || "-"}</td>
       <td>${e.user || "-"}</td>
       <td class="tipus">${e.tipus || "-"}</td>
-      <td>${e.soforId || "-"}</td>
-      <td>
+      <td><strong>${e.ref || "-"}</strong></td> <td>
         ${e.allapot ? "Állapot: " + e.allapot : ""}
         ${e.kapu ? " | Kapu: " + e.kapu : ""}
-        ${e.ref ? " | Ref: " + e.ref : ""}
         ${e.rendszam ? " | Rendszám: " + e.rendszam : ""}
+	</td>
+      <td style="text-align:center;">
+        <button onclick="torolBejegyzes('${docId}')" 
+                style="background:#dc3545; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                Törlés
+        </button>
       </td>
     `;
     tbody.appendChild(sor);
   });
 });
 
+function torolBejegyzes(id) {
+    if (confirm("Biztosan törölni szeretnéd ezt a bejegyzést?")) {
+        db.collection("riportnaplo").doc(id).delete()
+        .then(() => {
+            console.log("Bejegyzés törölve.");
+        })
+        .catch((error) => {
+            alert("Hiba történt: " + error);
+        });
+    }
+}
 if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
     document.getElementById("adminMenuAdatok").style.display = "inline";
     document.getElementById("adminMenuRiport").style.display = "inline";
-    document.getElementById("adminMenuRegisztráció").style.display = "inline";
 }
 const username = sessionStorage.getItem("user");
 if (username) {
@@ -159,11 +204,15 @@ if (username) {
 }
 document.getElementById("logoutBtn").addEventListener("click", () => {
     sessionStorage.clear();
-    window.location.href = "index.html"; // vissza a bejelentkező oldalra
+    window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
 });
-if (!sessionStorage.getItem("user")) {
-    document.getElementById("menuRegist").style.display = "none";
-}
+
+document.getElementById("exportBtn").addEventListener("click", () => {
+    const table = document.getElementById("riportTabla");
+    const wb = XLSX.utils.table_to_book(table, { sheet: "Riportnapló", raw: false });
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Sofor_Riport_${today}.xlsx`);
+});
 </script>
 
 </body>
