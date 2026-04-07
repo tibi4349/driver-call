@@ -147,6 +147,7 @@ const currentUser = sessionStorage.getItem("user");
 const isLoggedIn = currentUser && currentUser.trim() !== "";
 
 db.collection("soforok")
+	.orderBy("remark1", "desc")
 	.onSnapshot((snapshot) => {
     tabla.innerHTML = `
         <tr>
