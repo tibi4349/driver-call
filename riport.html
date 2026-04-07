@@ -68,7 +68,7 @@
     margin: 20px 0;
 }
 
-#exportBtn {
+.btn-export {
     background-color: #3e5171; /* Alapszín */
     color: white;
     border: none;
@@ -81,12 +81,48 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-#exportBtn:hover {
+.btn-export:hover {
     background-color: #556a9e; /* Szín, ha rámegy az egér */
+    transform: translateY(-1px); /* Kicsit megemelkedik */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
-#exportBtn:active {
+.btn-export:active {
     transform: translateY(1px); /* Kattintáskor kicsit benyomódik */
+}
+.btn-osszes-torles {
+    background-color: #e74c3c; /* Erős piros */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.btn-osszes-torles:hover {
+    background-color: #c0392b; /* Sötétebb piros */
+    transform: translateY(-1px); /* Kicsit megemelkedik */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.btn-osszes-torles:active {
+    transform: translateY(0); /* Benyomódás effekt */
+}
+.btn-nav {
+    background-color: #34495e;
+    color: white;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.btn-nav:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
 }
 </style>
 </head>
@@ -107,10 +143,21 @@
     <a href="reg.html" id="menuReg">Regisztráció</a>
     <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
     <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
-    <div class="export-container">
-    <button id="exportBtn">Export</button>
-    </div>
 </nav>
+
+
+<div style="width: 100%; text-align: right; margin: 15px 0;">
+    <div style="display: inline-flex; gap: 10px;">
+        <button id="exportBtn" class="btn-export">
+            📥 Exportálás Excelbe
+        </button>
+        <button onclick="oldalTorlese()" class="btn-osszes-torles">
+            ⚠️ Összes törlés
+        </button>
+    </div>
+</div>
+<table id="tabla">
+   </table>
 
 <table id="riportTabla">
   <thead>
@@ -123,8 +170,14 @@
       <th>Műveletek</th>
     </tr>
   </thead>
-  <tbody></tbody>
+  <tbody id="riportBody">
+</tbody>
 </table>
+<div style="margin-top: 20px; display: flex; justify-content: center; gap: 20px; align-items: center;">
+    <button id="prevBtn" class="btn-nav" onclick="elozoOldal()" disabled>⬅️ Előző</button>
+    <span id="oldalSzam" style="font-weight: bold;">1. oldal</span>
+    <button id="nextBtn" class="btn-nav" onclick="kovetkezoOldal()">Következő ➡️</button>
+</div>
 
 <footer>
     <p>Copyright © 2026. Minden jog fenntartva!</p>
@@ -191,6 +244,41 @@ function torolBejegyzes(id) {
         });
     }
 }
+async function oldalTorlese() {
+    const biztos = confirm("BIZTOS? Ez a művelet az összes jelenleg látható adatot törli!");
+    if (!biztos) return;
+
+    // Meghatározzuk a gyűjteményt az oldal címe alapján
+    const gyujtemeny = window.location.pathname.includes("regist") ? "soforok" : "riportnaplo";
+    
+    try {
+        // Lekérjük az összes dokumentumot az adott gyűjteményből, ami épp látszik
+        // (Vigyázat: Ez az ÖSSZESET törli a gyűjteményből, ha nincs limitálva!)
+        const snapshot = await db.collection(gyujtemeny).get();
+        
+        if (snapshot.empty) {
+            alert("Nincs adat az adatbázisban.");
+            return;
+        }
+
+        const batch = db.batch();
+        
+        snapshot.forEach((doc) => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        alert("Sikeresen töröltél " + snapshot.size + " elemet.");
+        
+        if(!window.location.pathname.includes("regist")) {
+            location.reload(); 
+        }
+
+    } catch (error) {
+        console.error("Hiba a törlés során: ", error);
+        alert("Hiba történt: " + error.message);
+    }
+}
 if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
     document.getElementById("adminMenuAdatok").style.display = "inline";
     document.getElementById("adminMenuRiport").style.display = "inline";
@@ -217,6 +305,92 @@ if (!sessionStorage.getItem("user")) {
     document.getElementById("menuRegist").style.display = "none";
     document.getElementById("menuReg").style.display = "none"
 }
+let lastVisible = null;
+let firstVisible = null;
+let oldal = 1;
+const limitErtek = 20;
+
+function megjelenitTablazat(snapshot) {
+    const tablaBody = document.getElementById("riportBody");
+
+	if (!tablaBody){
+	console.error("HIBA: Nem találom a 'riportbody' azonosítójú elemet a HTML-ben!");
+	return;
+	}
+    let html = "";
+
+    if (snapshot.empty) {
+        tablaBody.innerHTML = "<tr><td colspan='5'>Nincs megjeleníthető adat.</td></tr>";
+        return;
+    }
+
+snapshot.forEach((doc) => {
+    const e = doc.data(); // 'e' betűt használunk, hogy egyezzen az eredeti logikáddal
+    const docId = doc.id;
+    
+    html += `
+        <tr>
+            <td>${e.datum || "-"}</td>
+            <td>${e.user || "-"}</td>
+            <td class="tipus">${e.tipus || "-"}</td>
+            <td><strong>${e.ref || "-"}</strong></td>
+            <td>
+                ${e.allapot ? "Állapot: " + e.allapot : ""}
+                ${e.kapu ? " | Kapu: " + e.kapu : ""}
+                ${e.rendszam ? " | Rendszám: " + e.rendszam : ""}
+            </td>
+            <td style="text-align:center;">
+                <button class="delete-btn" 
+                        onclick="torolBejegyzes('${docId}')" 
+                        style="background:#dc3545; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                    Törlés
+                </button>
+            </td>
+        </tr>
+    `;
+});
+tablaBody.innerHTML = html;
+}
+
+async function betoltRiportok(irany = 'init') {
+    let query = db.collection("riportnaplo").orderBy("datum", "desc");
+
+    if (irany === 'next' && lastVisible) {
+        query = query.startAfter(lastVisible).limit(limitErtek);
+    } else if (irany === 'prev' && firstVisible) {
+        query = query.endBefore(firstVisible).limitToLast(limitErtek);
+    } else {
+        query = query.limit(limitErtek);
+    }
+
+    try {
+        const snapshot = await query.get();
+        
+        if (!snapshot.empty) {
+            firstVisible = snapshot.docs[0];
+            lastVisible = snapshot.docs[snapshot.docs.length - 1];
+
+            if (irany === 'next') oldal++;
+            if (irany === 'prev') oldal--;
+
+            document.getElementById("oldalSzam").innerText = `${oldal}. oldal`;
+            document.getElementById("prevBtn").disabled = (oldal === 1);
+            
+            megjelenitTablazat(snapshot);
+        } else if (irany === 'next') {
+            alert("Nincs több oldal.");
+        }
+    } catch (error) {
+        console.error("Hiba a betöltéskor:", error);
+    }
+}
+
+function kovetkezoOldal() { betoltRiportok('next'); }
+function elozoOldal() { betoltRiportok('prev'); }
+
+betoltRiportok();
+document.getElementById("nextBtn").onclick = () => betoltRiportok("next", lastVisible);
+document.getElementById("prevBtn").onclick = () => betoltRiportok("prev", firstVisible);
 </script>
 
 </body>
