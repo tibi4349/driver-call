@@ -72,6 +72,29 @@
         
         /* Elrejtjük az admin funkciókat alapértelmezetten */
         .admin-only { display: none; }
+.btn-osszes-torles {
+    background-color: #e74c3c; /* Erős piros */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.btn-osszes-torles:hover {
+    background-color: #c0392b; /* Sötétebb piros */
+    transform: translateY(-1px); /* Kicsit megemelkedik */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.btn-osszes-torles:active {
+    transform: translateY(0); /* Benyomódás effekt */
+}
+
     </style>
 </head>
 
@@ -100,6 +123,12 @@ if (!sessionStorage.getItem("user")) {
     <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
 
 </nav>
+
+<div id="adminDeleteContainer" style="margin: 15px 0; display: none; justify-content: flex-end;">
+    <button onclick="oldalTorlese()" class="btn-osszes-torles">
+        ⚠️ Összes törlés
+    </button>
+</div>
 
 <div class="content">
 
@@ -166,8 +195,8 @@ function datumMost() {
 }
 
 db.collection("soforok")
-	.orderBy("remark1", "desc")
-	.onSnapshot((snapshot) => {
+.orderBy("remark1", "desc")
+.onSnapshot((snapshot) => {
     let html = `
         <tr>
             <th>Ref.</th>
@@ -221,7 +250,7 @@ db.collection("soforok")
     });
     tabla.innerHTML = html;
 });
-	
+
 document.getElementById("form").addEventListener("submit", function(e) {
     e.preventDefault();
     if(!(isAdmin || isEditor)) return;
@@ -278,17 +307,43 @@ async function kapuValtoztat(id, kapu) {
 
   const doc = await db.collection("soforok").doc(id).get();
   const soforAdat = doc.data();
-  const referencia = soforAdat ? soforAdat.ref : "Nincs ref";
+  const tel = soforAdat.telefon;
+  const ref = soforAdat.ref || "-";
+
+if (!kapu) return;
 
   await db.collection("soforok").doc(id).update({ kapu: kapu });
 
   await db.collection("riportnaplo").add({
-      tipus: "kapu-változtatás",
-      ref: referencia,
+      tipus: "kapu-változtatás + SMS",
+      ref: ref,
       kapu: kapu,
       datum: datumMost(),
       user: sessionStorage.getItem("user") || "ismeretlen"
   });
+
+if (tel && tel.length > 5) {
+    try {
+      const response = await fetch('https://send-ramp-sms-5296.twil.io/path_1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: tel,
+          ramp: kapu
+        })
+      });
+const result = await response.json();
+      if (result.success) {
+        console.log("SMS sikeresen kiküldve!");
+      } else {
+        alert("SMS hiba: " + result.error);
+      }
+    } catch (error) {
+      console.error("Hálózati hiba az SMS küldésekor:", error);
+    }
+  } else {
+    console.warn("Nincs érvényes telefonszám a sofőrhöz.");
+  }
 }
 
 function torles(id) {
@@ -302,6 +357,27 @@ function torles(id) {
           user: sessionStorage.getItem("user") || "ismeretlen"
       });
   }
+}
+async function oldalTorlese() {
+    if (sessionStorage.getItem("role") !== "admin") {
+        alert("Ehhez a művelethez Admin jogosultság szükséges!");
+        return;
+    }
+
+    const biztos = confirm("FIGYELEM! Adminisztrátori művelet: Biztosan törlöd az összes éppen látható sofőrt?");
+    if (!biztos) return;
+
+    try {
+        const snapshot = await db.collection("soforok").get();
+        const batch = db.batch();
+        snapshot.forEach((doc) => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        alert("Sikeres adminisztrátori törlés.");
+    } catch (error) {
+        alert("Hiba a törlés során: " + error.message);
+    }
 }
 if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
     document.getElementById("adminMenuAdatok").style.display = "inline";
@@ -332,6 +408,14 @@ if (!currentUserMenu) {
     navProtectedLinks.forEach(link => link.style.display = "none");
 } else {
     navProtectedLinks.forEach(link => link.style.display = "inline");
+}
+const userRole = sessionStorage.getItem("role"); 
+
+if (userRole === "admin") {
+    const adminGombBox = document.getElementById("adminDeleteContainer");
+    if (adminGombBox) {
+        adminGombBox.style.display = "flex";
+    }
 }
 
 </script>
