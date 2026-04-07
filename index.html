@@ -147,7 +147,6 @@ const currentUser = sessionStorage.getItem("user");
 const isLoggedIn = currentUser && currentUser.trim() !== "";
 
 db.collection("soforok")
-	.where("allapot", "!=", "elment")
 	.onSnapshot((snapshot) => {
     tabla.innerHTML = `
         <tr>
@@ -170,7 +169,7 @@ db.collection("soforok")
 		<td>${sofor.ref}</td>
         	${isLoggedIn ? `<td>${sofor.rendszam}</td>` : ''}
         	${isLoggedIn ? `<td>${sofor.telefon}</td>` : ''}
-        	<td>${sofor.szunet}</td>
+        	${isLoggedIn ? `<td>${sofor.szunet}</td>` : ''}
         	<td>${sofor.allapot || "-"}</td>
         	${isLoggedIn ? `<td>${sofor.kapu || "-"}</td>` : ''}
         	<td>${sofor.remark1 || ""}</td>
