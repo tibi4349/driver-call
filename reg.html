@@ -126,9 +126,9 @@
 
 <nav>
     <a href="index.html">Kezdőlap</a>
-    <a href="regist.html" id="menuRegist">Sofőr regisztrálás</a>
+    <a href="regist.html">Sofőr regisztrálás</a>
     <a href="kapcs.html">Bejelentkezés</a>
-    <a href="reg.html" id="adminMenuRegisztráció" style="display:none;">Regisztráció</a>
+    <a href="reg.html">Regisztráció</a>
     <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
     <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
 
@@ -186,7 +186,6 @@ function register() {
 if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
     document.getElementById("adminMenuAdatok").style.display = "inline";
     document.getElementById("adminMenuRiport").style.display = "inline";
-    document.getElementById("adminMenuRegisztráció").style.display = "inline";
 }
 const username = sessionStorage.getItem("user");
 if (username) {
@@ -197,11 +196,8 @@ if (username) {
 }
 document.getElementById("logoutBtn").addEventListener("click", () => {
     sessionStorage.clear();
-    window.location.href = "index.html"; // vissza a bejelentkező oldalra
+    window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
 });
-if (!sessionStorage.getItem("user")) {
-    document.getElementById("menuRegist").style.display = "none";
-}
 </script>
 
 </body>
