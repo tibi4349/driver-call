@@ -77,8 +77,6 @@
 
 <body>
 
-
-
 <header>
     <h1>Sofőr lista</h1>
     <div id="userInfo">
@@ -90,8 +88,8 @@
 <nav>
     <a href="index.html">Kezdőlap</a>
     <a href="regist.html">Sofőr regisztrálás</a>
-    <a href="kapcs.html">Bejelentkezés</a>
-    <a href="reg.html" id="adminMenuRegisztráció" style="display:none;">Regisztráció</a>
+    <a href="kapcs.html" id="loginLogoutBtn">Bejelentkezés</a>
+    <a href="reg.html">Regisztráció</a>
     <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
     <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
 
@@ -104,8 +102,15 @@
         <form id="form">
             <input type="text" id="ref" placeholder="Ref" required>
             <input type="text" id="rendszam" placeholder="Rendszám" required>
-            <input type="text" id="telefon" placeholder="Telefonszám">
             <input type="text" id="szunet" placeholder="Szünet">
+            <input type="text" id="telefon" placeholder="Telefonszám">
+            <br>
+            <select id="allapot">
+                <option value="megérkezett">Megérkezett</option>
+                <option value="rakodás alatt">Rakodás alatt</option>
+                <option value="elment">Elment</option>
+            </select>
+            <br><br>
             <button type="submit">Mentés</button>
         </form>
     </div>
@@ -119,12 +124,6 @@
 </footer>
 
 <script>
-const currentUser = sessionStorage.getItem("user");
-if (!currentUser) {
-    alert("Kérlek, jelentkezz be a sofőr‑regisztrációs oldal megnyitásához!");
-    window.location.href = "kapcs.html";
-}
-
 const firebaseConfig = {
   apiKey: "AIzaSyAdt7j6PP4FPJIq0iuYgPsk06JWTAFuYbY",
   authDomain: "soforok-web.firebaseapp.com",
@@ -137,8 +136,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-
 const role = sessionStorage.getItem("role");
+
 const isAdmin = (role === "admin");
 const isEditor = (role === "editor");
 const isViewer = (role === "viewer");
@@ -150,7 +149,8 @@ if (isAdmin || isEditor) {
 
 
 let tabla = document.getElementById("tabla");
-const isLoggedIn = sessionStorage.getItem("user");
+const currentUser = sessionStorage.getItem("user");
+const isLoggedIn = currentUser && currentUser.trim() !== "";
 
 function datumMost() {
     let d = new Date();
@@ -166,8 +166,8 @@ db.collection("soforok").onSnapshot((snapshot) => {
         <tr>
             <th>Ref.</th>
             ${isLoggedIn ? '<th>Rendszám</th>' : ''}
-            ${isLoggedIn ? '<th>Telefonszám</th>' : ''}
             <th>Szünet</th>
+            ${isLoggedIn ? '<th>Telefonszám</th>' : ''}
             <th>Állapot</th>
             <th>Kapu</th>
             <th>Érkezett</th>
@@ -179,14 +179,14 @@ db.collection("soforok").onSnapshot((snapshot) => {
     snapshot.forEach((doc) => {
         let sofor = doc.data();
         
-        let allapotCella = (isAdmin || isEditor) ? `
+        let allapotCella = isAdmin ? `
             <select onchange="allapotValtoztat('${doc.id}', this.value)">
                 <option value="megérkezett" ${sofor.allapot==="megérkezett"?"selected":""}>Megérkezett</option>
                 <option value="rakodás alatt" ${sofor.allapot==="rakodás alatt"?"selected":""}>Rakodás alatt</option>
                 <option value="elment" ${sofor.allapot==="elment"?"selected":""}>Elment</option>
             </select>` : `<b>${sofor.allapot}</b>`;
 
-        let kapuCella = (isAdmin || isEditor) ? `
+        let kapuCella = isAdmin ? `
             <select onchange="kapuValtoztat('${doc.id}', this.value)">
                 <option value="" ${sofor.kapu===""?"selected":""}>-</option>
                 <option value="A0-02" ${sofor.kapu==="A0-02"?"selected":""}>A0-02</option>
@@ -203,8 +203,8 @@ db.collection("soforok").onSnapshot((snapshot) => {
             <tr>
                 <td>${sofor.ref}</td>
                 ${isLoggedIn ? `<td>${sofor.rendszam}</td>` : ''}
-                ${isLoggedIn ? `<td>${sofor.telefon}</td>` : ''}
                 <td>${sofor.szunet}</td>
+                ${isLoggedIn ? `<td>${sofor.telefon}</td>` : ''}
                 <td>${allapotCella}</td>
                 <td>${kapuCella}</td>
                 <td>${sofor.remark1 || ""}</td>
@@ -218,12 +218,13 @@ db.collection("soforok").onSnapshot((snapshot) => {
 
 document.getElementById("form").addEventListener("submit", function(e) {
     e.preventDefault();
-    if(!(isAdmin || isEditor)) return;
+    if(!isAdmin) return;
     let ujSofor = {
         ref: document.getElementById("ref").value,
         rendszam: document.getElementById("rendszam").value,
-        telefon: document.getElementById("telefon").value,
         szunet: document.getElementById("szunet").value,
+        telefon: document.getElementById("telefon").value,
+        allapot: document.getElementById("allapot").value,
         remark1: datumMost(),
         remark2: "",
         kapu: ""
@@ -241,27 +242,44 @@ document.getElementById("form").addEventListener("submit", function(e) {
     document.getElementById("form").reset();
 });
 
-function allapotValtoztat(id, ujAllapot) {
+async function allapotValtoztat(id, ujAllapot) {
   if(!(isAdmin || isEditor)) return;
+
+  const doc = await db.collection("soforok").doc(id).get();
+  const soforAdat = doc.data();
+  const referencia = soforAdat ? soforAdat.ref : "Nincs ref";
+  const rsz = soforAdat ? soforAdat.rendszam : "-";
+
   let now = datumMost();
   let adat = { allapot: ujAllapot };
   if (ujAllapot === "elment") adat.remark2 = now;
-  db.collection("soforok").doc(id).update(adat);
-  db.collection("riportnaplo").add({
+
+  await db.collection("soforok").doc(id).update(adat);
+
+  await db.collection("riportnaplo").add({
       tipus: "állapot-változtatás",
-      soforId: id,
+      ref: referencia,
+      rendszam: rsz,
       allapot: ujAllapot,
       datum: now,
       user: sessionStorage.getItem("user") || "ismeretlen"
   });
 }
 
-function kapuValtoztat(id, kapu) {
+
+
+async function kapuValtoztat(id, kapu) {
   if(!(isAdmin || isEditor)) return;
-  db.collection("soforok").doc(id).update({ kapu: kapu });
-  db.collection("riportnaplo").add({
+
+  const doc = await db.collection("soforok").doc(id).get();
+  const soforAdat = doc.data();
+  const referencia = soforAdat ? soforAdat.ref : "Nincs ref";
+
+  await db.collection("soforok").doc(id).update({ kapu: kapu });
+
+  await db.collection("riportnaplo").add({
       tipus: "kapu-változtatás",
-      soforId: id,
+      ref: referencia,
       kapu: kapu,
       datum: datumMost(),
       user: sessionStorage.getItem("user") || "ismeretlen"
@@ -283,7 +301,6 @@ function torles(id) {
 if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
     document.getElementById("adminMenuAdatok").style.display = "inline";
     document.getElementById("adminMenuRiport").style.display = "inline";
-    document.getElementById("adminMenuRegisztráció").style.display = "inline";
 }
 const username = sessionStorage.getItem("user");
 if (username) {
@@ -294,23 +311,8 @@ if (username) {
 }
 document.getElementById("logoutBtn").addEventListener("click", () => {
     sessionStorage.clear();
-    window.location.href = "index.html";
+    window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
 });
-
-const loggedUser = sessionStorage.getItem("user");
-const registMenu = document.getElementById("menuRegist");
-if (!isLoggedIn && registMenu) {
-    registMenu.style.display = "none";
-}
-
-const currentUserMenu = sessionStorage.getItem("user");
-const navProtectedLinks = document.querySelectorAll(".protected-link");
-if (!currentUserMenu) {
-    navProtectedLinks.forEach(link => link.style.display = "none");
-} else {
-    navProtectedLinks.forEach(link => link.style.display = "inline");
-}
-
 </script>
 
 </body>
