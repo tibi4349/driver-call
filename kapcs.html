@@ -125,9 +125,9 @@
 
 <nav>
     <a href="index.html">Kezdőlap</a>
-    <a href="regist.html">Sofőr regisztrálás</a>
+    <a href="regist.html" id="menuRegist">Sofőr regisztrálás</a>
     <a href="kapcs.html">Bejelentkezés</a>
-    <a href="reg.html">Regisztráció</a>
+    <a href="reg.html" id="menuReg">Regisztráció</a>
     <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
     <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
 
@@ -170,7 +170,7 @@ function checkLogin() {
         sessionStorage.setItem("user", user);
         sessionStorage.setItem("role", "admin");
         alert("Sikeres bejelentkezés: Admin");
-        window.location.href = "adatok.html"; // Admin oldalra irányít
+        window.location.href = "index.html"; // Admin oldalra irányít
         return;
     }
     db.collection("users")
@@ -191,7 +191,7 @@ function checkLogin() {
           sessionStorage.setItem("role", u.role || "viewer");
           
           alert("Sikeres belépés: " + user);
-          window.location.href = "regist.html"; // átirányítás regisztrált felhasználóknak
+          window.location.href = "index.html";
       })
       .catch(err => {
           console.error(err);
@@ -212,8 +212,13 @@ if (username) {
 }
 document.getElementById("logoutBtn").addEventListener("click", () => {
     sessionStorage.clear();
-    window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
+    window.location.href = "kapcs.html";
 });
+
+if (!sessionStorage.getItem("user")) {
+    document.getElementById("menuRegist").style.display = "none";
+    document.getElementById("menuReg").style.display = "none"
+}
 </script>
 
 </body>
