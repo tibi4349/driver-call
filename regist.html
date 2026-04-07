@@ -165,7 +165,9 @@ function datumMost() {
            String(d.getMinutes()).padStart(2,'0');
 }
 
-db.collection("soforok").onSnapshot((snapshot) => {
+db.collection("soforok")
+	.orderBy("remark1", "desc")
+	.onSnapshot((snapshot) => {
     let html = `
         <tr>
             <th>Ref.</th>
