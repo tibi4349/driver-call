@@ -111,9 +111,9 @@
 
 <nav>
     <a href="index.html">Kezdőlap</a>
-    <a href="regist.html">Sofőr regisztrálás</a>
+    <a href="regist.html" id="menuRegist">Sofőr regisztrálás</a>
     <a href="kapcs.html">Bejelentkezés</a>
-    <a href="reg.html">Regisztráció</a>
+    <a href="reg.html" id="adminMenuRegisztráció" style="display:none;">Regisztráció</a>
     <a href="adatok.html" id="adminMenuAdatok" style="display:none;">Adatok</a>
     <a href="riport.html" id="adminMenuRiport" style="display:none;">Riport</a>
 
@@ -153,10 +153,10 @@ db.collection("soforok")
         <tr>
 		<th>Ref.</th>
         	${isLoggedIn ? '<th>Rendszám</th>' : ''}
-        	<th>Szünet</th>
         	${isLoggedIn ? '<th>Telefonszám</th>' : ''}
+        	${isLoggedIn ? '<th>Szünet</th>' : ''}
         	<th>Állapot</th>
-        	<th>Kapu</th>
+        	${isLoggedIn ? '<th>Kapu</th>' : ''}
         	<th>Érkezett</th>
         	<th>Elment</th>
         </tr>
@@ -169,10 +169,10 @@ db.collection("soforok")
             <tr>
 		<td>${sofor.ref}</td>
         	${isLoggedIn ? `<td>${sofor.rendszam}</td>` : ''}
-        	<td>${sofor.szunet}</td>
         	${isLoggedIn ? `<td>${sofor.telefon}</td>` : ''}
+        	<td>${sofor.szunet}</td>
         	<td>${sofor.allapot || "-"}</td>
-        	<td>${sofor.kapu || "-"}</td>
+        	${isLoggedIn ? `<td>${sofor.kapu || "-"}</td>` : ''}
         	<td>${sofor.remark1 || ""}</td>
         	<td>${sofor.remark2 || ""}</td>
             </tr>
@@ -183,6 +183,7 @@ db.collection("soforok")
 if (sessionStorage.getItem("user") === "Admin" || sessionStorage.getItem("role") === "admin") {
     document.getElementById("adminMenuAdatok").style.display = "inline";
     document.getElementById("adminMenuRiport").style.display = "inline";
+    document.getElementById("adminMenuRegisztráció").style.display = "inline";
 }
 const username = sessionStorage.getItem("user");
 if (username) {
@@ -193,8 +194,27 @@ if (username) {
 }
 document.getElementById("logoutBtn").addEventListener("click", () => {
     sessionStorage.clear();
-    window.location.href = "kapcs.html"; // vissza a bejelentkező oldalra
+    window.location.href = "index.html"; // vissza a bejelentkező oldalra
 });
+if (!sessionStorage.getItem("user")) {
+    document.getElementById("menuRegist").style.display = "none";
+}
+const navProtectedLinks = document.querySelectorAll(".protected-link");
+const loggedUser = sessionStorage.getItem("user");
+
+if (!loggedUser) {
+    navProtectedLinks.forEach(link => {
+        link.style.display = "none";
+    });
+} else {
+    navProtectedLinks.forEach(link => {
+        link.style.display = "inline";
+    });
+}
+
+if (!sessionStorage.getItem("user")) {
+    document.getElementById("menuRegist").style.display = "none";
+}
 </script>
 
 </body>
