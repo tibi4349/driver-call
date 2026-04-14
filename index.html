@@ -120,7 +120,6 @@
 </nav>
 
 <div class="content">
-    <h2>Meglévő sofőrök</h2>
 
     <table id="tabla"></table>
 </div>
@@ -149,16 +148,21 @@ const isLoggedIn = currentUser && currentUser.trim() !== "";
 db.collection("soforok")
 	.orderBy("remark1", "desc")
 	.onSnapshot((snapshot) => {
+	if (!isLoggedIn) {
+    	tabla.innerHTML = "<p>Az adatok megtekintéséhez bejelentkezés szükséges.</p>";
+    	return;
+}
     tabla.innerHTML = `
         <tr>
-		<th>Ref.</th>
+		${isLoggedIn ? '<th>Ref.</th>' : ''}
         	${isLoggedIn ? '<th>Rendszám</th>' : ''}
         	${isLoggedIn ? '<th>Telefonszám</th>' : ''}
         	${isLoggedIn ? '<th>Szünet</th>' : ''}
-        	<th>Állapot</th>
+        	${isLoggedIn ? '<th>Állapot</th>' : ''}
         	${isLoggedIn ? '<th>Kapu</th>' : ''}
-        	<th>Érkezett</th>
-        	<th>Elment</th>
+        	${isLoggedIn ? '<th>Érkezett</th>' : ''}
+        	${isLoggedIn ? '<th>Elment</th>' : ''}
+        	${!isLoggedIn ? '<th>Információ</th>' : ''}
         </tr>
     `;
 
@@ -167,14 +171,15 @@ db.collection("soforok")
 
         tabla.innerHTML += `
             <tr>
-		<td>${sofor.ref}</td>
+		${isLoggedIn ? `<td>${sofor.ref}</td>` : ''}
         	${isLoggedIn ? `<td>${sofor.rendszam}</td>` : ''}
         	${isLoggedIn ? `<td>${sofor.telefon}</td>` : ''}
         	${isLoggedIn ? `<td>${sofor.szunet}</td>` : ''}
-        	<td>${sofor.allapot || "-"}</td>
+        	${isLoggedIn ? `<td>${sofor.allapot || "-"}</td>` : ''}
         	${isLoggedIn ? `<td>${sofor.kapu || "-"}</td>` : ''}
-        	<td>${sofor.remark1 || ""}</td>
-        	<td>${sofor.remark2 || ""}</td>
+        	${isLoggedIn ? `<td>${sofor.remark1 || ""}</td>` : ''}
+        	${isLoggedIn ? `<td>${sofor.remark2 || ""}</td>` : ''}
+        	${!isLoggedIn ? `<td style="color: #666; font-style: italic;">Kérjük, jelentkezzen be az adatok megtekintéséhez!</td>` : ''}
             </tr>
         `;
     });
