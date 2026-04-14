@@ -143,7 +143,12 @@ if (!sessionStorage.getItem("user")) {
         </form>
     </div>
 
-    <h2>Meglévő sofőrök</h2>
+    <h2>Regisztrált sofőrök</h2>
+<div style="margin-bottom: 15px; text-align: center;">
+    <input type="text" id="keresoMezo" onkeyup="keresesFunkcio()" 
+           placeholder="Keresés rendszám vagy ref alapján..." 
+           style="width: 300px; padding: 10px; border: 2px solid #0c2541; border-radius: 20px; outline: none;">
+</div>
     <table id="tabla"></table>
 </div>
 
@@ -234,12 +239,19 @@ db.collection("soforok")
                 <option value="F33" ${sofor.kapu==="F33"?"selected":""}>F33</option>
             </select>` : `<b>${sofor.kapu || "-"}</b>`;
 
+	let szunetCella = (isAdmin || isEditor) ? `
+    		<input type="text" 
+           		value="${sofor.szunet || ''}" 
+           		style="width: 80px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;"
+           		onchange="szunetFrissit('${doc.id}', this.value)">` 
+    		: `<span>${sofor.szunet || "-"}</span>`;
+
         html += `
             <tr>
                 <td>${sofor.ref}</td>
                 ${isLoggedIn ? `<td>${sofor.rendszam}</td>` : ''}
                 ${isLoggedIn ? `<td>${sofor.telefon}</td>` : ''}
-                <td>${sofor.szunet}</td>
+                <td>${szunetCella}</td>
                 <td>${allapotCella}</td>
                 <td>${kapuCella}</td>
                 <td>${sofor.remark1 || ""}</td>
@@ -300,7 +312,31 @@ async function allapotValtoztat(id, ujAllapot) {
   });
 }
 
+async function szunetFrissit(id, ujSzunet) {
+    if (!(isAdmin || isEditor)) return;
 
+    try {
+        await db.collection("soforok").doc(id).update({
+            szunet: ujSzunet
+        });
+
+        const doc = await db.collection("soforok").doc(id).get();
+        const ref = doc.data() ? doc.data().ref : "-";
+
+        await db.collection("riportnaplo").add({
+            tipus: "szünet-módosítás",
+            ref: ref,
+            ertek: ujSzunet,
+            datum: datumMost(),
+            user: sessionStorage.getItem("user") || "ismeretlen"
+        });
+
+        console.log("Szünet frissítve!");
+    } catch (error) {
+        console.error("Hiba a szünet frissítésekor:", error);
+        alert("Nem sikerült menteni a módosítást!");
+    }
+}
 
 async function kapuValtoztat(id, kapu) {
   if(!(isAdmin || isEditor)) return;
@@ -415,6 +451,31 @@ if (userRole === "admin") {
     const adminGombBox = document.getElementById("adminDeleteContainer");
     if (adminGombBox) {
         adminGombBox.style.display = "flex";
+    }
+}
+
+function keresesFunkcio() {
+    let input = document.getElementById("keresoMezo");
+    let filter = input.value.toUpperCase();
+    let table = document.getElementById("tabla");
+    let tr = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < tr.length; i++) {
+        let tdRef = tr[i].getElementsByTagName("td")[0];      // Ref oszlop
+        let tdRendszam = tr[i].getElementsByTagName("td")[1]; // Rendszám oszlop
+
+        if (tdRef || tdRendszam) {
+            let txtValueRef = tdRef.textContent || tdRef.innerText;
+            let txtValueRendszam = tdRendszam.textContent || tdRendszam.innerText;
+
+            // Ha bármelyikben benne van a keresett szó
+            if (txtValueRef.toUpperCase().indexOf(filter) > -1 || 
+                txtValueRendszam.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = ""; // Megjelenít
+            } else {
+                tr[i].style.display = "none"; // Elrejt
+            }
+        }
     }
 }
 
