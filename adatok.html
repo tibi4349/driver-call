@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <title>Adatok</title>
+<link rel="icon" type="image/png" href="icon-192.png" sizes="32x32">
+<link rel="manifest" href="manifest.json">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SoforApp">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>  
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>  
@@ -180,6 +189,7 @@ db.collection("users").onSnapshot(snapshot => {
             <th>Felhasználónév</th>
             <th>Jelszó</th>
             <th>Jogosultság</th>
+            <th>Láthatóság</th>
             <th>Állapot</th>
             <th>Művelet</th>
         </tr>
@@ -197,6 +207,13 @@ db.collection("users").onSnapshot(snapshot => {
 			   <option value="viewer" ${u.role==="viewer"?"selected":""}>Néző</option>
 			   <option value="editor" ${u.role==="editor"?"selected":""}>Szerkesztő</option>
 			   <option value="admin" ${u.role==="admin"?"selected":""}>Admin</option>
+			</select>
+		</td>
+		<td>
+			<select onchange="setRole('${doc.id}', this.value)">
+			   <option value="BUD/CTP" ${u.role==="BUD/CTP"?"selected":""}>BUD/CTP</option>
+			   <option value="BUD" ${u.role==="BUD"?"selected":""}>BUD</option>
+			   <option value="CTP" ${u.role==="CTP"?"selected":""}>CTP</option>
 			</select>
 		</td>
                 <td>${u.approved ? "Jóváhagyva" : "Függőben"}</td>
