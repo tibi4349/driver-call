@@ -244,8 +244,10 @@ db.collection("soforok")
                 <option value="A0-07" ${sofor.kapu==="A0-07"?"selected":""}>A0-07</option>
                 <option value="A0-08" ${sofor.kapu==="A0-08"?"selected":""}>A0-08</option>
                 <option value="A0-09" ${sofor.kapu==="A0-09"?"selected":""}>A0-09</option>
-                <option value="F32" ${sofor.kapu==="F32"?"selected":""}>F32</option>
-                <option value="F33" ${sofor.kapu==="F33"?"selected":""}>F33</option>
+                <option value="F-32" ${sofor.kapu==="F-32"?"selected":""}>F-32</option>
+                <option value="F-33" ${sofor.kapu==="F-33"?"selected":""}>F-33</option>
+				<option value="F-06" ${sofor.kapu==="F-06"?"selected":""}>F-06</option>
+				<option value="F-07" ${sofor.kapu==="F-07"?"selected":""}>F-07</option>
             </select>` : `<b>${sofor.kapu || "-"}</b>`;
 
 	let szunetCella = (isAdmin || isEditor) ? `
